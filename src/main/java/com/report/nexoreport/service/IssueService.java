@@ -106,6 +106,22 @@ public class IssueService {
         return new IssueDashboardResponse(received.size(), pending, inProgress, resolved, received.stream().map(this::toDto).toList());
     }
 
+    public List<IssueResponseDto> issuesByCategory(Authentication auth, String category) {
+        User current = getCurrentUser(auth);
+        return issueRepository.findByCategoryIgnoreCaseOrderByCreatedAtDesc(category)
+                .stream()
+                .filter(issue -> canUserAccessIssue(current, issue))
+                .map(this::toDto)
+                .toList();
+    }
+
+    public List<IssueResponseDto> broadcastFeed() {
+        return issueRepository.findByTargetTypeOrderByCreatedAtDesc(IssueTargetType.ALL)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     public IssueThreadResponse issueThread(Authentication auth, Long issueId) {
         User current = getCurrentUser(auth);
         Issue issue = getIssueOrThrow(issueId);
@@ -201,6 +217,9 @@ public class IssueService {
         }
         if (!canUserAccessIssue(current, issue)) {
             throw new BadRequestException("You cannot resolve this issue");
+        }
+        if (issue.getStatus() == IssueStatus.RESOLVED) {
+            throw new BadRequestException("Issue already resolved");
         }
         issue.setStatus(IssueStatus.RESOLVED);
         issueRepository.save(issue);

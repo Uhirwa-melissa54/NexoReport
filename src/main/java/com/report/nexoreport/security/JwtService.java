@@ -30,8 +30,16 @@ public class JwtService {
     }
 
     public String generateToken(String username, Map<String, Object> extraClaims) {
+        return generateToken(username, extraClaims, jwtExpirationMs);
+    }
+
+    public String generateAccessToken(String username, Map<String, Object> extraClaims) {
+        return generateToken(username, extraClaims, jwtExpirationMs);
+    }
+
+    private String generateToken(String username, Map<String, Object> extraClaims, long expirationMs) {
         Date now = new Date();
-        Date expiration = new Date(now.getTime() + jwtExpirationMs);
+        Date expiration = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(username)

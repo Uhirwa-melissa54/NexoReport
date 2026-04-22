@@ -1,15 +1,14 @@
 package com.report.nexoreport.controller;
 
-import com.report.nexoreport.dto.ChangePasswordRequest;
-import com.report.nexoreport.dto.InviteUserRequest;
-import com.report.nexoreport.dto.MessageResponse;
-import com.report.nexoreport.dto.UserResponse;
+import com.report.nexoreport.dto.*;
 import com.report.nexoreport.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -29,7 +28,7 @@ public class UserController {
 
     @PostMapping("/invite")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF')")
-    public ResponseEntity<UserResponse> inviteUser(@Valid @RequestBody InviteUserRequest request) {
+    public ResponseEntity<InviteUserResult> inviteUser(@Valid @RequestBody InviteUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.inviteUser(request));
     }
 
@@ -47,5 +46,17 @@ public class UserController {
     public ResponseEntity<MessageResponse> resendInvitation(@PathVariable Long userId) {
         userService.resendInvitation(userId);
         return ResponseEntity.ok(new MessageResponse("Invitation reminder has been sent to the user."));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<UserResponse> profile(Authentication authentication) {
+        return ResponseEntity.ok(userService.getProfile(authentication));
+    }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF')")
+    public ResponseEntity<MessageResponse> deleteUser(Authentication authentication, @PathVariable Long userId) {
+        userService.softDeleteUser(authentication, userId);
+        return ResponseEntity.ok(new MessageResponse("User deactivated successfully"));
     }
 }

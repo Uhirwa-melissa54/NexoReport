@@ -103,4 +103,16 @@ public class IssueController {
     public ResponseEntity<IssueResponseDto> resend(Authentication authentication, @PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.CREATED).body(issueService.resendIssue(authentication, id));
     }
+
+    @GetMapping("/category/{category}")
+    @Operation(summary = "Filter issues by category", description = "Return issues in a category visible to current user")
+    public ResponseEntity<java.util.List<IssueResponseDto>> byCategory(Authentication authentication, @PathVariable String category) {
+        return ResponseEntity.ok(issueService.issuesByCategory(authentication, category));
+    }
+
+    @GetMapping("/broadcast")
+    @Operation(summary = "Broadcast feed", description = "Return latest broadcast issues")
+    public ResponseEntity<java.util.List<IssueResponseDto>> broadcastFeed() {
+        return ResponseEntity.ok(issueService.broadcastFeed());
+    }
 }

@@ -1,6 +1,7 @@
 package com.report.nexoreport.repository;
 
 import com.report.nexoreport.issue.IssueStatus;
+import com.report.nexoreport.issue.IssueTargetType;
 import com.report.nexoreport.model.Issue;
 import com.report.nexoreport.user.User;
 import com.report.nexoreport.user.UserRole;
@@ -14,9 +15,11 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 
     long countByCreatedByAndStatus(User createdBy, IssueStatus status);
 
-    List<Issue> findByTargetTypeOrderByCreatedAtDesc(com.report.nexoreport.issue.IssueTargetType targetType);
+    List<Issue> findByTargetTypeOrderByCreatedAtDesc(IssueTargetType targetType);
 
-    List<Issue> findByTargetTypeAndTargetRoleOrderByCreatedAtDesc(com.report.nexoreport.issue.IssueTargetType targetType, UserRole role);
+    List<Issue> findByTargetTypeAndTargetRoleOrderByCreatedAtDesc(IssueTargetType targetType, UserRole role);
 
-    List<Issue> findByTargetTypeAndTargetUserIdOrderByCreatedAtDesc(com.report.nexoreport.issue.IssueTargetType targetType, Long targetUserId);
+    List<Issue> findByTargetTypeAndTargetUserIdOrderByCreatedAtDesc(IssueTargetType targetType, Long targetUserId);
+
+    List<Issue> findByCategoryIgnoreCaseOrderByCreatedAtDesc(String category);
 }
