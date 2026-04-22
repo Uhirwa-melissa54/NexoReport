@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,10 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+    private static final int REFRESH_TOKEN_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
     private final AuthService authService;
+    private final boolean refreshCookieSecure;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, @Value("${app.auth.refresh-cookie-secure:true}") boolean refreshCookieSecure) {
         this.authService = authService;
+        this.refreshCookieSecure = refreshCookieSecure;
     }
 
     @PostMapping("/login")
@@ -55,16 +59,16 @@ public class AuthController {
     private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, refreshToken);
         cookie.setHttpOnly(true);
-        cookie.setSecure(false);
+        cookie.setSecure(refreshCookieSecure);
         cookie.setPath("/");
-        cookie.setMaxAge(7 * 24 * 60 * 60);
+        cookie.setMaxAge(REFRESH_TOKEN_MAX_AGE_SECONDS);
         response.addCookie(cookie);
     }
 
     private void clearRefreshTokenCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(false);
+        cookie.setSecure(refreshCookieSecure);
         cookie.setPath("/");
         cookie.setMaxAge(0);
         response.addCookie(cookie);
