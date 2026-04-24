@@ -287,6 +287,14 @@ public class IssueService {
                 .toList();
     }
 
+    public List<IssueResponseDto> inProgressIssues(Authentication auth) {
+        User current = getCurrentUser(auth);
+        return issueRepository.findVisibleByStatusOrderByCreatedAtDesc(current.getId(), current.getRole(), IssueStatus.IN_PROGRESS)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     public long priorityUnresolvedCount() {
         return issueRepository.countPriorityUnresolved(List.of(IssuePriority.HIGH, IssuePriority.CRITICAL));
     }

@@ -121,17 +121,24 @@ public class IssueController {
     }
 
     @GetMapping("/resolved")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF','COMMITTEE_MEMBER','CLASS_MONITOR')")
     @Operation(summary = "Resolved issues", description = "Return resolved issues visible to current user ordered by createdAt desc")
     public ResponseEntity<List<IssueResponseDto>> resolved(Authentication authentication) {
         return ResponseEntity.ok(issueService.resolvedIssues(authentication));
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF','COMMITTEE_MEMBER','CLASS_MONITOR')")
     @Operation(summary = "Pending issues", description = "Return pending issues visible to current user ordered by createdAt desc")
     public ResponseEntity<List<IssueResponseDto>> pending(Authentication authentication) {
         return ResponseEntity.ok(issueService.pendingIssues(authentication));
+    }
+
+    @GetMapping("/in-progress")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF','COMMITTEE_MEMBER','CLASS_MONITOR')")
+    @Operation(summary = "In-progress issues", description = "Return in-progress issues visible to current user ordered by createdAt desc")
+    public ResponseEntity<List<IssueResponseDto>> inProgress(Authentication authentication) {
+        return ResponseEntity.ok(issueService.inProgressIssues(authentication));
     }
 
     @GetMapping("/priority/unresolved/count")
