@@ -1,5 +1,6 @@
 package com.report.nexoreport.controller;
 
+import com.report.nexoreport.dto.AssignIssueRequest;
 import com.report.nexoreport.dto.IssueCommentRequest;
 import com.report.nexoreport.dto.IssueCreateRequest;
 import com.report.nexoreport.dto.IssueDashboardResponse;
@@ -8,6 +9,7 @@ import com.report.nexoreport.dto.IssueResolveRequest;
 import com.report.nexoreport.dto.IssueResponseDto;
 import com.report.nexoreport.dto.IssueThreadResponse;
 import com.report.nexoreport.dto.MessageResponse;
+import com.report.nexoreport.dto.PriorityUnresolvedCountResponse;
 import com.report.nexoreport.service.IssueService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,8 +17,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -114,5 +118,38 @@ public class IssueController {
     @Operation(summary = "Broadcast feed", description = "Return latest broadcast issues")
     public ResponseEntity<java.util.List<IssueResponseDto>> broadcastFeed() {
         return ResponseEntity.ok(issueService.broadcastFeed());
+    }
+
+    @GetMapping("/resolved")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF')")
+    @Operation(summary = "Resolved issues", description = "Return resolved issues visible to current user ordered by createdAt desc")
+    public ResponseEntity<List<IssueResponseDto>> resolved(Authentication authentication) {
+        return ResponseEntity.ok(issueService.resolvedIssues(authentication));
+    }
+
+    @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF')")
+    @Operation(summary = "Pending issues", description = "Return pending issues visible to current user ordered by createdAt desc")
+    public ResponseEntity<List<IssueResponseDto>> pending(Authentication authentication) {
+        return ResponseEntity.ok(issueService.pendingIssues(authentication));
+    }
+
+    @GetMapping("/priority/unresolved/count")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF')")
+    @Operation(summary = "Priority unresolved total", description = "Count HIGH/CRITICAL priority issues that are not resolved")
+    public ResponseEntity<PriorityUnresolvedCountResponse> priorityUnresolvedCount() {
+        return ResponseEntity.ok(new PriorityUnresolvedCountResponse(issueService.priorityUnresolvedCount()));
+    }
+
+    @PostMapping("/{issueId}/assign")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Assign issue", description = "Admin assigns a staff member to handle an issue")
+    public ResponseEntity<MessageResponse> assign(
+            Authentication authentication,
+            @PathVariable Long issueId,
+            @Valid @RequestBody AssignIssueRequest request
+    ) {
+        issueService.assignIssue(authentication, issueId, request);
+        return ResponseEntity.ok(new MessageResponse("Issue assigned"));
     }
 }

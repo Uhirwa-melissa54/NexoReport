@@ -2,6 +2,7 @@ package com.report.nexoreport.service;
 
 import com.report.nexoreport.comment.Comment;
 import com.report.nexoreport.dto.CommentResponseDto;
+import com.report.nexoreport.dto.AssignIssueRequest;
 import com.report.nexoreport.dto.IssueActivityResponseDto;
 import com.report.nexoreport.dto.IssueCommentRequest;
 import com.report.nexoreport.dto.IssueCreateRequest;
@@ -12,6 +13,7 @@ import com.report.nexoreport.dto.IssueResponseDto;
 import com.report.nexoreport.dto.IssueThreadResponse;
 import com.report.nexoreport.exception.BadRequestException;
 import com.report.nexoreport.exception.ResourceNotFoundException;
+import com.report.nexoreport.issue.IssuePriority;
 import com.report.nexoreport.issue.IssueResponseType;
 import com.report.nexoreport.issue.IssueStatus;
 import com.report.nexoreport.issue.IssueTargetType;
@@ -28,12 +30,15 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class IssueService {
+    private static final Logger log = LoggerFactory.getLogger(IssueService.class);
     private static final Set<UserRole> STAFF_ROLES = Set.of(
             UserRole.ADMIN, UserRole.TEACHER, UserRole.NURSE, UserRole.ADMINISTRATIVE_STAFF
     );
@@ -264,6 +269,61 @@ public class IssueService {
                 NotificationType.ISSUE_CREATED
         );
         return toDto(saved);
+    }
+
+    public List<IssueResponseDto> resolvedIssues(Authentication auth) {
+        User current = getCurrentUser(auth);
+        return issueRepository.findVisibleByStatusOrderByCreatedAtDesc(current.getId(), current.getRole(), IssueStatus.RESOLVED)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    public List<IssueResponseDto> pendingIssues(Authentication auth) {
+        User current = getCurrentUser(auth);
+        return issueRepository.findVisibleByStatusOrderByCreatedAtDesc(current.getId(), current.getRole(), IssueStatus.PENDING)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    public long priorityUnresolvedCount() {
+        return issueRepository.countPriorityUnresolved(List.of(IssuePriority.HIGH, IssuePriority.CRITICAL));
+    }
+
+    @Transactional
+    public void assignIssue(Authentication auth, Long issueId, AssignIssueRequest request) {
+        User admin = getCurrentUser(auth);
+        if (admin.getRole() != UserRole.ADMIN) {
+            throw new BadRequestException("Only admin can assign issues");
+        }
+
+        Issue issue = getIssueOrThrow(issueId);
+        User assigned = userRepository.findById(request.getAssignedUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Assigned user not found"));
+
+        Set<UserRole> assignableRoles = Set.of(
+                UserRole.ADMIN,
+                UserRole.TEACHER,
+                UserRole.NURSE,
+                UserRole.ADMINISTRATIVE_STAFF,
+                UserRole.COMMITTEE_MEMBER,
+                UserRole.CLASS_MONITOR
+        );
+        if (!assignableRoles.contains(assigned.getRole())) {
+            throw new BadRequestException("Assigned user must be a staff, committee member, or monitor");
+        }
+
+        issue.setAssignedTo(assigned);
+        issue.setStatus(IssueStatus.IN_PROGRESS);
+        issueRepository.save(issue);
+
+        notificationService.notifyUsers(
+                List.of(assigned),
+                "You have been assigned to issue: " + issue.getTitle() + " (Issue #" + issue.getId() + ")",
+                NotificationType.ISSUE_ASSIGNED
+        );
+        log.info("Issue {} assigned to user {}", issueId, request.getAssignedUserId());
     }
 
     private void validateTargetRules(User sender, IssueCreateRequest request) {

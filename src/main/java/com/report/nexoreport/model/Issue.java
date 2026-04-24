@@ -60,6 +60,10 @@ public class Issue {
     @Column
     private UserRole targetRole;
 
+    @ManyToOne
+    @JoinColumn(name = "assigned_to")
+    private User assignedTo;
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
@@ -153,5 +157,13 @@ public class Issue {
 
     public void setTargetRole(UserRole targetRole) {
         this.targetRole = targetRole;
+    }
+
+    public User getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(User assignedTo) {
+        this.assignedTo = assignedTo;
     }
 }
