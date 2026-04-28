@@ -174,6 +174,11 @@ public class UserService {
         userRepository.save(target);
     }
 
+    public java.util.List<UserResponse> getUsersByRole(String roleName) {
+        UserRole role = UserRole.valueOf(roleName.toUpperCase());
+        return userRepository.findByRole(role).stream().map(this::toUserResponse).toList();
+    }
+
     public boolean isStaffRole(String roleName) {
         return STAFF_ROLES.contains(UserRole.valueOf(roleName));
     }

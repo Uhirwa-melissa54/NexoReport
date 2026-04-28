@@ -48,6 +48,8 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("Invitation reminder has been sent to the user."));
     }
 
+    
+
     @GetMapping("/profile")
     public ResponseEntity<UserResponse> profile(Authentication authentication) {
         return ResponseEntity.ok(userService.getProfile(authentication));
@@ -58,5 +60,11 @@ public class UserController {
     public ResponseEntity<MessageResponse> deleteUser(Authentication authentication, @PathVariable Long userId) {
         userService.softDeleteUser(authentication, userId);
         return ResponseEntity.ok(new MessageResponse("User deactivated successfully"));
+    }
+
+    @GetMapping("/by-role/{role}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','NURSE','ADMINISTRATIVE_STAFF','COMMITTEE_MEMBER','CLASS_MONITOR','STUDENT')")
+    public ResponseEntity<java.util.List<UserResponse>> getUsersByRole(@PathVariable String role) {
+        return ResponseEntity.ok(userService.getUsersByRole(role));
     }
 }
