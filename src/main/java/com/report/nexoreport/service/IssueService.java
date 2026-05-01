@@ -343,9 +343,6 @@ public class IssueService {
         }
 
         if (STUDENT_LIKE_ROLES.contains(sender.getRole())) {
-            if (request.getTargetType() == IssueTargetType.ALL) {
-                throw new BadRequestException("Student-like roles cannot broadcast to ALL");
-            }
             if (request.getTargetType() == IssueTargetType.ROLE && !isStaff(request.getTargetRole())) {
                 throw new BadRequestException("Student-like roles can send only to staff roles");
             }
