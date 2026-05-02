@@ -65,25 +65,31 @@ public class UserService {
         User existingUser = userRepository.findByEmail(request.getEmail())
                 .orElse(null);
 
-        // CASE 1: already invited
+        // CASE 1: already invited — generate fresh password and resend
         if (existingUser != null && existingUser.getStatus() == UserStatus.INVITED) {
-
+            String generatedPassword = passwordGenerator.generate();
+            existingUser.setPassword(passwordEncoder.encode(generatedPassword));
+            userRepository.save(existingUser);
+            sendEmailAsync(existingUser, generatedPassword);
             return new InviteUserResult(
-                    false,
-                    "User already invited. You can resend invitation.",
+                    true,
+                    "Invitation resent with a new temporary password.",
                     existingUser.getId(),
-                    true
+                    false,
+                    existingUser.getEmail(),
+                    generatedPassword
             );
         }
 
         // CASE 2: already active
         if (existingUser != null && existingUser.getStatus() == UserStatus.ACTIVE) {
-
             return new InviteUserResult(
                     false,
-                    "User already active",
+                    "This user already has an active account.",
                     existingUser.getId(),
-                    false
+                    false,
+                    existingUser.getEmail(),
+                    null
             );
         }
 
@@ -101,14 +107,28 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        emailService.sendInvitationEmail(savedUser, generatedPassword);
+        sendEmailAsync(savedUser, generatedPassword);
 
         return new InviteUserResult(
                 true,
-                "Invitation sent successfully",
+                "Invitation sent successfully.",
                 savedUser.getId(),
-                false
+                false,
+                savedUser.getEmail(),
+                generatedPassword
         );
+    }
+
+    /** Sends email in a background thread so it never blocks the HTTP response. */
+    private void sendEmailAsync(User user, String rawPassword) {
+        new Thread(() -> {
+            try {
+                emailService.sendInvitationEmail(user, rawPassword);
+                log.info("Invitation email sent to {}", user.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to send invitation email to {}: {}", user.getEmail(), e.getMessage());
+            }
+        }).start();
     }
 
     @Transactional
@@ -123,7 +143,7 @@ public class UserService {
         String generatedPassword = passwordGenerator.generate();
         user.setPassword(passwordEncoder.encode(generatedPassword));
         userRepository.save(user);
-        emailService.sendInvitationEmail(user, generatedPassword);
+        sendEmailAsync(user, generatedPassword);
         log.info("Invitation resent for userId={} at {}", userId, Instant.now());
     }
 
