@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByIssueOrderByCreatedAtAsc(Issue issue);
+
+    void deleteByIssue(Issue issue);
 }

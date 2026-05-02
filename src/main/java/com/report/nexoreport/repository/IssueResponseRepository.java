@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 public interface IssueResponseRepository extends JpaRepository<IssueResponse, Long> {
     List<IssueResponse> findByIssueOrderByCreatedAtAsc(Issue issue);
 
+    void deleteByIssue(Issue issue);
+
     interface SystemActivityRow {
         LocalDate getDate();
 

@@ -10,6 +10,7 @@ import com.report.nexoreport.dto.IssueResponseDto;
 import com.report.nexoreport.dto.IssueThreadResponse;
 import com.report.nexoreport.dto.MessageResponse;
 import com.report.nexoreport.dto.PriorityUnresolvedCountResponse;
+import com.report.nexoreport.dto.PublicStatsResponse;
 import com.report.nexoreport.service.IssueService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -158,5 +160,23 @@ public class IssueController {
     ) {
         issueService.assignIssue(authentication, issueId, request);
         return ResponseEntity.ok(new MessageResponse("Issue assigned"));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete issue", description = "Delete an issue; only the original submitter can delete it. Removes all associated comments and activity.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Issue deleted"),
+            @ApiResponse(responseCode = "400", description = "Not the issue creator"),
+            @ApiResponse(responseCode = "404", description = "Issue not found")
+    })
+    public ResponseEntity<MessageResponse> deleteIssue(Authentication authentication, @PathVariable Long id) {
+        issueService.deleteIssue(authentication, id);
+        return ResponseEntity.ok(new MessageResponse("Issue deleted"));
+    }
+
+    @GetMapping("/stats/public")
+    @Operation(summary = "Public issue statistics", description = "Returns total issues submitted and resolved percentage for the landing page. No authentication required.")
+    public ResponseEntity<PublicStatsResponse> publicStats() {
+        return ResponseEntity.ok(issueService.getPublicStats());
     }
 }

@@ -89,4 +89,8 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
             nativeQuery = true
     )
     List<PendingAssignedCountRow> findAssignedUsersWithPendingCountAbove(@Param("threshold") long threshold);
+
+    long count();
+
+    long countByStatus(IssueStatus status);
 }

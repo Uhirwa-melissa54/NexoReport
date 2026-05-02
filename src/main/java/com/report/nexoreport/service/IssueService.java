@@ -11,6 +11,7 @@ import com.report.nexoreport.dto.IssueEditRequest;
 import com.report.nexoreport.dto.IssueResolveRequest;
 import com.report.nexoreport.dto.IssueResponseDto;
 import com.report.nexoreport.dto.IssueThreadResponse;
+import com.report.nexoreport.dto.PublicStatsResponse;
 import com.report.nexoreport.exception.BadRequestException;
 import com.report.nexoreport.exception.ResourceNotFoundException;
 import com.report.nexoreport.issue.IssuePriority;
@@ -300,8 +301,31 @@ public class IssueService {
     }
 
     @Transactional
-    public void assignIssue(Authentication auth, Long issueId, AssignIssueRequest request) {
-        User admin = getCurrentUser(auth);
+    public void deleteIssue(Authentication auth, Long issueId) {
+        User current = getCurrentUser(auth);
+        Issue issue = getIssueOrThrow(issueId);
+        if (!issue.getCreatedBy().getId().equals(current.getId())) {
+            throw new BadRequestException("Only the issue creator can delete this issue");
+        }
+        if (issue.getStatus() != IssueStatus.PENDING) {
+            throw new BadRequestException("Only pending issues can be deleted");
+        }
+        // Delete child records first to avoid FK constraint violations
+        commentRepository.deleteByIssue(issue);
+        issueResponseRepository.deleteByIssue(issue);
+        issueRepository.delete(issue);
+        log.info("Issue {} deleted by user {}", issueId, current.getId());
+    }
+
+    public PublicStatsResponse getPublicStats() {
+        long total = issueRepository.count();
+        long resolved = issueRepository.countByStatus(IssueStatus.RESOLVED);
+        double percentage = total == 0 ? 0.0 : Math.round((resolved * 100.0 / total) * 10.0) / 10.0;
+        return new PublicStatsResponse(total, resolved, percentage);
+    }
+
+    @Transactional
+    public void assignIssue(Authentication auth, Long issueId, AssignIssueRequest request) {        User admin = getCurrentUser(auth);
         if (admin.getRole() != UserRole.ADMIN) {
             throw new BadRequestException("Only admin can assign issues");
         }
