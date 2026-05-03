@@ -32,11 +32,12 @@ public class SmtpEmailService implements EmailService {
     }
 
     private String buildBody(User user, String rawPassword) {
-        return "Welcome to the Issue Reporting System.\n\n"
-                + "Your account has been created.\n"
+        return "Welcome to NexaReport — Issue Reporting System.\n\n"
+                + "Your account has been created by an administrator.\n\n"
                 + "Email: " + user.getEmail() + "\n"
                 + "Temporary Password: " + rawPassword + "\n"
                 + "Login URL: " + loginUrl + "\n\n"
-                + "Please log in and update your password.";
+                + "Please log in using the temporary password above and change it immediately.\n\n"
+                + "If you did not expect this invitation, please ignore this email.";
     }
 }

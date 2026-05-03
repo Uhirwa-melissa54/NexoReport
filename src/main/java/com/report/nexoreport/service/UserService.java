@@ -70,7 +70,12 @@ public class UserService {
             String generatedPassword = passwordGenerator.generate();
             existingUser.setPassword(passwordEncoder.encode(generatedPassword));
             userRepository.save(existingUser);
-            sendEmailAsync(existingUser, generatedPassword);
+            try {
+                emailService.sendInvitationEmail(existingUser, generatedPassword);
+            } catch (Exception e) {
+                log.error("Failed to resend invitation email to {}: {}", existingUser.getEmail(), e.getMessage());
+                throw new BadRequestException("Password updated but email could not be sent: " + e.getMessage());
+            }
             return new InviteUserResult(
                     true,
                     "Invitation resent with a new temporary password.",
@@ -107,7 +112,12 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        sendEmailAsync(savedUser, generatedPassword);
+        try {
+            emailService.sendInvitationEmail(savedUser, generatedPassword);
+        } catch (Exception e) {
+            log.error("Failed to send invitation email to {}: {}", savedUser.getEmail(), e.getMessage());
+            throw new BadRequestException("User created but email could not be sent: " + e.getMessage());
+        }
 
         return new InviteUserResult(
                 true,
@@ -119,17 +129,6 @@ public class UserService {
         );
     }
 
-    /** Sends email in a background thread so it never blocks the HTTP response. */
-    private void sendEmailAsync(User user, String rawPassword) {
-        new Thread(() -> {
-            try {
-                emailService.sendInvitationEmail(user, rawPassword);
-                log.info("Invitation email sent to {}", user.getEmail());
-            } catch (Exception e) {
-                log.error("Failed to send invitation email to {}: {}", user.getEmail(), e.getMessage());
-            }
-        }).start();
-    }
 
     @Transactional
     public void resendInvitation(Long userId) {
@@ -143,7 +142,12 @@ public class UserService {
         String generatedPassword = passwordGenerator.generate();
         user.setPassword(passwordEncoder.encode(generatedPassword));
         userRepository.save(user);
-        sendEmailAsync(user, generatedPassword);
+        try {
+            emailService.sendInvitationEmail(user, generatedPassword);
+        } catch (Exception e) {
+            log.error("Failed to resend invitation email to {}: {}", user.getEmail(), e.getMessage());
+            throw new BadRequestException("Password updated but email could not be sent: " + e.getMessage());
+        }
         log.info("Invitation resent for userId={} at {}", userId, Instant.now());
     }
 
