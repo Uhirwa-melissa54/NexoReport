@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
  * Falls back to SmtpEmailService if this bean is not primary.
  */
 @Service
-@Primary
 public class ResendEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(ResendEmailService.class);
